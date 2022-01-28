@@ -1,0 +1,1 @@
+# AVD-POC-with-Bicep-and-Azure-Pipelines
