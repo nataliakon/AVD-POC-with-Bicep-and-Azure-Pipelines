@@ -1,0 +1,95 @@
+########################## Azure Pipelines Paramaters. Do not modify ######################################
+parameters:
+  - name: userManagement     # default parameter for user mgmt pipeline
+    type: boolean
+    default: false 
+  - name: action
+    default: ''
+
+  - name: vmManagement      # default parameter for vm management pipeline
+    type: boolean
+    default: false 
+
+######################## Pod(s) Configuration #############################################
+  - name: pods
+    type: object
+    default:
+      - podId: POD01
+        numberOfVMs: 2  # number of VMs to add to the pool 
+        variableOverrides: 
+          image: Windows10withO365
+          userGroupName: AVD-TestUsers
+
+      - podId: POD02
+        numberOfVMs: 1  # number of VMs to add to the pool 
+        variableOverrides:
+          VnetName: azureminilab-cac-vnet1
+          VnetResourceGroup: azureminilab-vnet
+
+      - podId: POD03
+        numberOfVMs: 1  # number of VMs to add to the pool 
+        variableOverrides: 
+          image: Windows10
+
+variables:
+  - template: ../variables/common.yml
+
+####################### Persona details ###########################################
+  - name: personaId
+    value: PR01
+  - name: personaName
+    value: Developers
+    
+####################### Active Directory ###########################################
+  - name: domainToJoin
+    value: azureminilab.com
+  - name: joinDomain
+    value: true
+  - name: ouPath
+    value: ''
+
+  ############################# User Profile Storage ################################
+  - name: storageAccount
+    value: azlabcacnavdpr01
+  - name: accessTier
+    value: Hot
+  - name: enabledProtocols
+    value: SMB
+  - name: shareQuota
+    value: 5120
+  - name: storageAccountType
+    value: StandardSSD_LRS
+
+############################ Host Pool VM size #######################################
+  - name: vmSize
+    value: Standard_F2s_v2
+
+
+############################## Custom Image parameters (Optional) ##########################
+  - name: useSharedImage
+    value: false
+  - name: sigName
+    value: ImageGallery_cabf5f79
+  - name: sigRG
+    value: Azureminilab-AIBDemo1
+  - name: image
+    value: Win10_Ent_Multisession_AVD_Optimized
+
+########################### Virtual Network for the Pods to be deployed to #####################
+  - name: VnetName
+    value: azurelabcacn-avd-vnet
+  - name: VnetResourceGroup
+    value: AzurelabCACN-VNET
+
+
+################# Azure Pipeline extenstion. Do not modify ############################################
+
+stages:
+
+  - template: ../../.pipeline/main-pipeline.yml
+    parameters:
+      personaId: PR01
+      pods: ${{ parameters.pods }}
+      userManagement: ${{ parameters.userManagement }}
+      vmManagement: ${{ parameters.vmManagement }}
+      action: ${{ parameters.action }}

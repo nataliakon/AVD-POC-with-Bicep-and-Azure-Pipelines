@@ -1,0 +1,43 @@
+parameters:
+  - name: personaId
+    displayName: Persona ID
+    type: string
+
+  - name: podId
+    displayName: Pod ID
+    type: string
+
+  - name: podResourceGroup
+    type: string
+
+  - name: podVariables
+    type: object
+    default: {}
+
+stages:
+# Stage to create Host Pool and App Group AVD resources
+  - template: deploy-pod.yml
+    parameters:
+      podId: ${{ parameters.podId }}
+      personaId: ${{ parameters.personaId }}
+      podResourceGroup: ${{ parameters.podResourceGroup }}
+      podVariables: ${{ parameters.podVariables }}
+
+
+  ### Stage to create file share for user profiles
+  - template: deploy-fileshare.yml
+    parameters: 
+      podId: ${{ parameters.podId }}
+      personaId: ${{ parameters.personaId }}
+      podResourceGroup: ${{ parameters.podResourceGroup }}
+      podVariables: ${{ parameters.podVariables }}
+
+
+  ### Stage to update the AVD workspace with App Group
+
+  - template: update-workspace.yml
+    parameters:
+      podId: ${{ parameters.podId }}
+      personaId: ${{ parameters.personaId }}
+      appGroupName: ${{ parameters.personaId }}-${{ parameters.podId }}-AppGroup
+

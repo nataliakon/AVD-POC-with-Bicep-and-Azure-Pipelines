@@ -1,0 +1,53 @@
+parameters:
+  - name: pods
+    type: object
+    default:
+      - podId: POD01
+        numberOfVMs: 1
+        variableOverrides: {}
+
+      - podId: POD02
+        numberOfVMs: 1
+        variableOverrides: {}
+
+      - podId: POD03
+        numberOfVMs: 1
+        variableOverrides: {}
+
+variables:
+  - template: ../variables/common.yml
+
+
+  - name: personaId
+    value: PR02
+  - name: personaName
+    value: Developers
+
+  - name: domain
+    value: azureminilab.com
+  - name: joinDomain
+    value: true
+  - name: NetAppAccountName
+    value: 
+  - name: NetAppResourceGroup
+    value: 
+  - name: NetAppSubnetId
+    value: 
+
+  - name: useSharedImage
+    value: false
+  - name: sigName
+    value:
+  - name: sigRG
+    value:
+
+  - name: VnetName
+    value: ADDS-VNET
+  - name: VnetResourceGroup
+    value: ADDS-RG
+
+stages:
+  - template: ../../.pipeline/templates/main-persona-pipeline.yml
+    parameters:
+      personaId: PR02
+      pods: ${{ parameters.pods }}

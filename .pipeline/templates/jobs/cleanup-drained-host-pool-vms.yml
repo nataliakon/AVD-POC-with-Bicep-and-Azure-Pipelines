@@ -1,0 +1,21 @@
+parameters: 
+  - name: personaId
+  - name: podId
+  - name: podResourceGroup
+
+
+jobs: 
+
+  - job: Remove_Drained_SessionHosts_for_${{ parameters.podId }}
+    displayName: Remove Drained Session Hosts in ${{ parameters.podId }}
+    steps: 
+      - task: AzurePowerShell@4
+        name: Remove_drained_hosts_in_${{ parameters.podId }}
+        displayName: Remove drained hosts in ${{ parameters.podId }}
+        inputs: 
+          pwsh: true
+          azureSubscription: $(serviceConnection)
+          scriptType: filePath
+          azurePowerShellVersion: "LatestVersion"
+          scriptPath: $(Build.Repository.LocalPath)\scripts\Remove-SessionHosts.ps1
+          scriptArguments: -ResourceGroupName ${{ parameters.podResourceGroup }}  -HostPoolName ${{ parameters.personaId }}-${{ parameters.podId }}-Pool

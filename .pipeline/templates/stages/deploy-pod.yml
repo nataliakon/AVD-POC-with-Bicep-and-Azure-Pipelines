@@ -1,0 +1,31 @@
+parameters:
+  - name: podId
+    default: ""
+  - name: personaId
+  - name: podResourceGroup
+#  - namm: keyVaultName
+  - name: podVariables
+    type: object
+    default: {}
+
+stages:
+  # Create new pod resource group and resources
+  - stage: DeployPod_${{ parameters.podId }}
+    dependsOn: Deploy_Persona
+    displayName: Deploy Pod ${{ parameters.podId }}
+    jobs:
+      - template: ../jobs/deploy-template.yml
+        parameters:
+          jobName: Deploy_POD_${{ parameters.podId}}
+          resourceGroupName: ${{ parameters.podResourceGroup }}
+          location: $(deploymentRegion)
+          subscriptionID: $(subscriptionID)
+          workingDir: $(System.DefaultWorkingDirectory)
+          templateFile: bicep-modules/pod.bicep
+          variableOverrides: ${{ parameters.podVariables }}
+          parameterArray:
+      #     - keyVaultName ${{ parameters.keyVaultName }}
+            - persona ${{ parameters.personaId }}
+            - pod ${{ parameters.podId }}
+            - LGAworkspaceId $(workspaceId)
+

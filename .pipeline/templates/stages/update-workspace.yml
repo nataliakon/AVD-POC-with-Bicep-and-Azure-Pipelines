@@ -1,0 +1,29 @@
+parameters:
+  - name: personaId
+    type: string
+
+  - name: appGroupName
+    type: string
+  
+  - name: podId
+    type: string
+
+stages:
+  - stage: Update_AVD_Workspacefor_Persona_${{ parameters.personaId }}_add_Pod_${{ parameters.podId }}
+    displayName: Add AppGroup ${{ parameters.appGroupName }} for POD ${{ parameters.podID }} to AVD workspace of Persona ${{ parameters.personaId }}
+    jobs:
+
+  # Deploy AVD workspace for Persona
+      - template: ../jobs/deploy-template.yml
+        parameters:
+          jobName: Update_AVD_Workspace_for_Persona_${{ parameters.personaId }}_add_Pod_${{ parameters.podId }}
+         # dependsOnJob: Deploy_RG_for_Persona
+          resourceGroupName: AVD-${{ parameters.personaId }}-RG
+          subscriptionID: $(subscriptionID)
+          location: $(deploymentRegion)
+          workingDir: $(System.DefaultWorkingDirectory)
+          templateFile: bicep-modules/avd/update-workspacev1.bicep
+          parameterArray:
+            - workspaceName ${{ parameters.personaId }}-Workspace
+            - workspaceLocation eastus
+            - appGroupName ${{ parameters.appGroupName }}

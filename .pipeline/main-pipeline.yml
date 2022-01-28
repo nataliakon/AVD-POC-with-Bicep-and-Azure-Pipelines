@@ -1,0 +1,51 @@
+parameters: 
+  - name: userManagement
+    type: boolean
+    default: false 
+  - name: action
+    default: ''
+
+  - name: vmManagement
+    type: boolean
+    default: false 
+
+  - name: pods
+    type: object
+
+  - name: personaId
+
+
+stages:
+
+## AVD Infra deployment 
+  - ${{ if and( eq(parameters.userManagement, false), eq(parameters.vmManagement, false)) }}:
+      - template: templates/main-persona-pipeline.yml
+        parameters:
+          personaId: ${{ parameters.personaId }}
+          pods: ${{ parameters.pods }}
+
+### User management 
+  - ${{ if and(eq(parameters.userManagement, true), eq(parameters.vmManagement, false)) }}:
+    - ${{ each pod in parameters.pods }}:
+        - template: templates/stages/assign-users-to-pod.yml
+          parameters: 
+            personaId: ${{ parameters.personaId }}
+            podId: ${{ pod.podId }}
+            AvdGroupAppName: ${{ parameters.personaId }}-${{ pod.podId }}-AppGroup
+            action: ${{ parameters.action }}
+            podResourceGroup: AVD-${{ parameters.personaId }}-RG
+            podVariables: ${{ pod.variableOverrides }}
+
+### VM Management 
+
+  - ${{ if and(eq(parameters.userManagement, false), eq(parameters.vmManagement, true)) }}:
+    - ${{ each pod in parameters.pods }}:
+        - template: templates/stages/session-host-management.yml
+          parameters: 
+            personaId: ${{ parameters.personaId }}
+            podId: ${{ pod.podId }}
+            podResourceGroup: AVD-${{ parameters.personaId }}-{{ pod.podId }}-RG
+            action: ${{ parameters.action}}
+            numberOfVMs: ${{ pod.numberOfVMs}}  # number of VMs to add to the pool 
+            podVariables: ${{ pod.variableOverrides }}
+

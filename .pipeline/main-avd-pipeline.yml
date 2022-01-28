@@ -1,0 +1,21 @@
+# Pipleine for deploying multiple pods supporting a single persona
+
+trigger:
+  - none
+
+pr:
+  - none
+
+pool:
+  vmImage: $[ variables.vmImage ]
+
+parameters:
+  - name: persona
+    displayName: Persona
+    type: string
+    values:
+      - PR01
+
+extends:
+  template: ../config/Persona/${{ parameters.persona }}.yml
+

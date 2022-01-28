@@ -1,0 +1,31 @@
+variables:
+  - template: ../../../config/variables/common.yml
+
+stages:
+  - stage: Prep_Deployment
+    displayName: Prep Deployment
+    jobs:
+      - job: Download_Repo
+        displayName: Download the Repo
+        steps:
+          - checkout: self
+            displayName: Clone Git Repo
+
+          - task: Bash@3
+            displayName: List Git Repo Content
+            inputs:
+              targetType: "inline"
+              script: "ls"
+
+
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: '$(serviceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Copying the repo into the storage account" 
+                az storage copy -s $(System.DefaultWorkingDirectory) --account-name $(storageaccountForScripts) --destination-container avd --recursive
+
+
+               

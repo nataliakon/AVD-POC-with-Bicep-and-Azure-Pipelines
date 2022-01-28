@@ -1,0 +1,47 @@
+parameters:
+  - name: podId
+    default: ""
+  - name: personaId
+  - name: numberOfVMs   # number of VMs to add 
+    type: number
+  - name: keyVaultName
+  - name: keyVaultResourceGroupName
+  - name: keyVaultSubscriptionId
+  - name: podResourceGroup
+  - name: podVariables
+    type: object
+    default: {}
+
+stages:
+  - stage: Drain_Host_VMs_${{ parameters.podId }}
+    displayName: Drain VMs ${{ parameters.podId}}
+    jobs:
+    ## Job template to place current hosts into 'Drain' mode 
+      - template: ../jobs/drain-host-pool.yml
+        parameters: 
+          personaId: ${{ parameters.personaId }}
+          podId: ${{ parameters.podId }}
+          podResourceGroup: AVD-${{ parameters.personaId }}-RG
+
+### Run template stage 'deploy-host-pool-vms.yml with output from previous stage for current instances
+  - template: deploy-host-pool-vms.yml
+    parameters: 
+      podId: ${{ parameters.podId }}
+      personaId: ${{ parameters.personaId }}
+      numberOfVMs: ${{ parameters.numberOfVMs }}
+      keyVaultName: $(VaultName)
+      keyVaultResourceGroupName: $(VaultResourceGroupName)
+      keyVaultSubscriptionId: $(VaultSubscriptionId)
+      podResourceGroup: AVD-${{ parameters.personaId }}-${{ parameters.podId }}-RG
+      podVariables: ${{ parameters.podVariables }}
+
+### Run template stage to Remove the session hosts in 'Drain' mode and 0 user sessions
+
+  - stage: Cleanup_Drained_Hosts_in_${{ parameters.podId }}
+    displayName: Remove registration and VMs placed in Drain mode in ${{ parameters.podId }}
+    jobs:
+      - template: ../jobs/cleanup-drained-host-pool-vms.yml
+        parameters:
+          personaId: ${{ parameters.personaId }}
+          podId: ${{ parameters.podId }}
+          podResourceGroup: AVD-${{ parameters.personaId }}-RG

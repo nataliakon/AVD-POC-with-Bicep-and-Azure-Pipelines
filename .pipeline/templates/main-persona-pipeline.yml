@@ -1,0 +1,21 @@
+parameters:
+  - name: personaId
+    displayName: Persona ID
+    type: string
+
+  - name: pods
+    displayName: Pods
+    type: object
+
+stages:
+ # - template: stages/prep-stage.yml
+  - template: stages/deploy-persona.yml
+    parameters:
+      personaId: ${{ parameters.personaId }}
+  - ${{ each pod in parameters.pods }}:
+      - template: stages/pod.yml
+        parameters:
+          personaId: ${{ parameters.personaId }}
+          podId: ${{ pod.podId }}
+          podResourceGroup: AVD-${{ parameters.personaId }}-RG
+          podVariables: ${{ pod.variableOverrides }}

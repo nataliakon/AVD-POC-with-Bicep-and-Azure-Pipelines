@@ -1,0 +1,47 @@
+parameters: 
+  - name: podId
+  - name: personaId
+  - name: podResourceGroup
+
+
+stages:
+  - stage: Drain_Pod_${{ parameters.podId }}
+    displayName: Placing ALL SessionHosts from ${{ parameters.podId }} in Drain mode 
+    jobs: 
+    ## Job template to place current hosts into 'Drain' mode 
+      - template: ../jobs/drain-host-pool.yml
+        parameters: 
+          personaId: ${{ parameters.personaId }}
+          podId: ${{ parameters.podId }}
+          podResourceGroup: AVD-${{ parameters.personaId }}-RG
+  - stage: Disconnect_Users_Pod_${{ parameters.podId }}_Unregister_Session_Hosts
+    displayName: Disconnect users from ${{ parameters.podId }} and unregister session hosts
+    dependsOn: Drain_Pod_${{ parameters.podId }}
+    jobs:
+### Run template job to Remove the session hosts in 'Drain' mode and 0 user sessions
+      - template: ../jobs/cleanup-drained-host-pool-vms.yml
+        parameters:
+          personaId: ${{ parameters.personaId }}
+          podId: ${{ parameters.podId }}
+          podResourceGroup: AVD-${{ parameters.personaId }}-RG
+
+  - stage: Remove_ResourceGroup_for_${{ parameters.podId }}
+    displayName: Remove RG for ${{ parameters.podId }}
+    dependsOn: Disconnect_Users_Pod_${{ parameters.podId }}_Unregister_Session_Hosts
+    jobs: 
+      ## Remove the resource group
+      - job: Remove_ResourceGroup_for_${{ parameters.podId }}
+        steps: 
+          - task: AzurePowerShell@4
+            name: Remove_RG_for_${{ parameters.podId }}
+            inputs: 
+              pwsh: true
+              azureSubscription: $(serviceConnection)
+              scriptType: inlineScript
+              azurePowerShellVersion: "LatestVersion"
+              Inline: | 
+                Remove-AzResourceGroup -Name ${{ parameters.podResourceGroup }} -Force
+
+
+
+

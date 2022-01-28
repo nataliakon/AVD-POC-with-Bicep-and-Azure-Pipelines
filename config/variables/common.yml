@@ -1,0 +1,29 @@
+# ----------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+#
+# THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, 
+# EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+# OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+# ----------------------------------------------------------------------------------
+
+variables:
+
+  deploymentRegion: canadacentral  
+  serviceConnection: ADO-CA-AVD-Bicep_MSDN2  # ADO service connection to Azure subscription
+  subscriptionID: 4f6c98e1-04a4-49f0-abce-6240b1726c3f # Subscription ID of to deploy to AVD
+  vmImage: ubuntu-latest
+  vmWinImage: windows-latest
+  deployOperation: create  # valid options: 'create', 'what-if'
+  var-bashPreInjectScript: 'set -E; function catch { echo "##vso[task.logissue type=error]Caller: $(caller), LineNo: $LINENO, Command: $BASH_COMMAND" ; exit 1 ; } ; echo ; echo "Current working directory: $(pwd)" ; echo ; trap catch ERR'
+  var-bashPostInjectScript: ':'
+  #filePrivateZoneId: /subscriptions/1965c25a-b7fd-48b5-a393-c9e785c1c4d9/resourceGroups/azureminilab-lighthouse/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net # central Azure private DNS zone for file endpoihts
+  filePrivateZoneRG: pubsec-dns-rg # Resource Group for Azure Private DNS zone for Azure Files
+  workspaceId: /subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourcegroups/azlabcacn-avd-sharedinfra/providers/microsoft.operationalinsights/workspaces/avdworkspace
+  VaultName: AzLabCACN-VMs-Infra
+  VaultResourceGroupName: AzLabCACN-AVD-SharedInfra
+  VaultSubscriptionId: 4f6c98e1-04a4-49f0-abce-6240b1726c3f
+  CoreInfra-resourceGroupName: AzLabCACN-AVD-SharedInfra  # Resource Group to deploy AVD core infra (if needed): VNET, LGA and Key Vault
+  storageaccountForScripts: azlabcacndevops   # storage account for customization script. Assuming in the same subscription as AIB deployment
+  storageaccountRG: AzLabCACN-AVD-SharedInfra  # storage account resource group for customizations. Assuming in the same subscription as AIB deployment
+  container: avd    # container where the customization scripts would reside 

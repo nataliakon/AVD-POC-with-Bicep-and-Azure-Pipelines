@@ -1,0 +1,54 @@
+parameters:
+  - name: action
+  - name: personaId
+    displayName: Persona ID
+    type: string
+
+  - name: podId
+    displayName: Pod ID
+    type: string
+  - name: AvdGroupAppName
+    type: string
+  - name: podResourceGroup
+    type: string
+
+  - name: podVariables
+    type: object
+    default: {}
+
+stages: 
+    - stage: UserGroup_${{parameters.action}}_for_${{ parameters.personaId}}_and_${{parameters.podId}}
+      jobs: 
+
+        - job: Add_Users_to_${{ parameters.podId }}
+          condition: eq ('${{parameters.action}}','Add')
+          variables:
+            ${{ insert }}: ${{ parameters.podVariables }}
+          steps:
+          - task: AzurePowerShell@4
+            name: Add_Users_to_${{ parameters.podId }}
+            displayName: Add Users to ${{ parameters.podId }}
+            inputs: 
+              pwsh: true
+              azureSubscription: $(serviceConnection)
+              scriptType: filePath
+              azurePowerShellVersion: "LatestVersion"
+              scriptPath: $(Build.Repository.LocalPath)\scripts\Add-AppGroupUserAssignment.ps1
+              scriptArguments: -ResourceGroupName ${{ parameters.podResourceGroup }} -AvdAppGroupName ${{parameters.AvdGroupAppName}} -AzureADGroupName $(userGroupName)
+
+
+        - job: Remove_Users_from_${{ parameters.podId }}
+          condition: eq ('${{parameters.action}}','Remove')
+          variables:
+            ${{ insert }}: ${{ parameters.podVariables }}
+          steps:
+          - task: AzurePowerShell@4
+            name: Remove_Users_from_${{ parameters.podId }}
+            displayName: Remove Users from ${{ parameters.podId }}
+            inputs: 
+              pwsh: true
+              azureSubscription: $(serviceConnection)
+              scriptType: filePath
+              azurePowerShellVersion: "LatestVersion"
+              scriptPath: $(Build.Repository.LocalPath)\scripts\Add-AppGroupUserAssignment.ps1
+              scriptArguments: -ResourceGroupName ${{ parameters.podResourceGroup }} -AvdAppGroupName ${{parameters.AvdGroupAppName}} -AzureADGroupName $(userGroupName)

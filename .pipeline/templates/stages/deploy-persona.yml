@@ -1,0 +1,63 @@
+parameters:
+  - name: personaId
+    type: string
+
+stages:
+  - stage: Deploy_Persona
+    displayName: Deploy Persona ${{ parameters.personaId }}
+    jobs:
+  # Deploy Persona Resource Group
+      - template: ../jobs/deploy-template-sub.yml
+        parameters:
+          jobName: Deploy_RG_for_Persona
+          location: $(deploymentRegion)
+          workingDir: $(System.DefaultWorkingDirectory)/bicep-modules
+          templateFile: azresource/new-rg.bicep
+          parameterArray:
+            - resourceGroupName AVD-${{ parameters.personaId }}-RG
+            - resourceGroupLocation $(deploymentRegion)
+
+  # # Deploy storage account with private endpoint for Azure Files. 
+      - template: ../jobs/deploy-template.yml
+        parameters:
+          jobName: Deploy_StorageAccount_for_Persona
+          dependsOnJob: Deploy_RG_for_Persona
+          resourceGroupName: AVD-${{ parameters.personaId }}-RG
+          subscriptionID: $(subscriptionID)
+          location: $(deploymentRegion)
+          workingDir: $(System.DefaultWorkingDirectory)
+          templateFile: bicep-modules/storage/new-storage.bicep
+          parameterArray:
+            - name $(storageAccount)
+            - filePrivateZoneRG $(filePrivateZoneRG)
+            - VnetName $(VnetName)
+            - VnetResourceGroup $(VnetResourceGroup)
+            - subnetName ${{ parameters.personaId }}-SUB
+            - LGAworspaceId $(workspaceId)
+
+   # Enable AD DS authentication for Azure Storage account   (https://docs.microsoft.com/en-us/azure/storage/files/storage-files-identity-auth-active-directory-domain-service-enable?tabs=azure-portal)
+  
+
+  # Deploy AVD workspace for Persona
+      - template: ../jobs/deploy-template.yml
+        parameters:
+          jobName: Deploy_AVD_Workspace_for_Persona
+         # dependsOnJob: Deploy_RG_for_Persona
+          dependsOnJob: Deploy_StorageAccount_for_Persona
+          resourceGroupName: AVD-${{ parameters.personaId }}-RG
+          subscriptionID: $(subscriptionID)
+          location: $(deploymentRegion)
+          workingDir: $(System.DefaultWorkingDirectory)
+          templateFile: bicep-modules/avd/workspace.bicep
+          parameterArray:
+            - workspaceName ${{ parameters.personaId }}-Workspace
+            - workspaceLocation eastus
+            - workspaceDescription ${{ parameters.personaId }}-Workspace
+            - workspaceFriendlyName ${{ parameters.personaId }}-Workspace
+            - LGAworspaceId $(workspaceId)
+
+
+
+
+
+  # Deploy VNET [optional]. 

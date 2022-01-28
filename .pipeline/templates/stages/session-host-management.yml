@@ -1,0 +1,68 @@
+parameters:
+  - name: action
+  - name: personaId
+    displayName: Persona ID
+    type: string
+
+  - name: podId
+  - name: podResourceGroup
+  - name: numberOfVMs
+    displayName: Number of VMs to add 
+    type: number
+  - name: podVariables
+    type: object
+    default: {}
+
+
+stages: 
+
+   ## Stage for New Build. Hydrating the Host pool. For example, new build - no VMs in Host pool. 
+  - ${{ if eq(parameters.action,'NewBuild') }}:
+    - template: hydrate-host-pool-vms.yml
+      parameters: 
+        podId: ${{ parameters.podId }}
+        personaId: ${{ parameters.personaId }}
+        numberOfVMs: ${{ parameters.numberOfVMs }}
+        keyVaultName: $(VaultName)
+        keyVaultResourceGroupName: $(VaultResourceGroupName)
+        keyVaultSubscriptionId: $(VaultSubscriptionId)
+        podResourceGroup: AVD-${{ parameters.personaId }}-${{ parameters.podId }}-RG
+        podVariables: ${{ parameters.podVariables }}
+
+
+   ## Stage to Add Session Hosts. Increase instances deployed into host pool. 
+  - ${{ if eq(parameters.action,'Add') }}:
+    - template: deploy-host-pool-vms.yml
+      parameters: 
+        podId: ${{ parameters.podId }}
+        personaId: ${{ parameters.personaId }}
+        numberOfVMs: ${{ parameters.numberOfVMs }}
+        keyVaultName: $(VaultName)
+        keyVaultResourceGroupName: $(VaultResourceGroupName)
+        keyVaultSubscriptionId: $(VaultSubscriptionId)
+        podResourceGroup: AVD-${{ parameters.personaId }}-${{ parameters.podId }}-RG
+        podVariables: ${{ parameters.podVariables }}
+    
+    ## Stage to deploy Session Hosts with new(er) image to host pool
+  - ${{ if eq(parameters.action,'Update') }}:
+    - template: update-host-pool-vms.yml
+      parameters: 
+        podId: ${{ parameters.podId }}
+        personaId: ${{ parameters.personaId }}
+        numberOfVMs: ${{ parameters.numberOfVMs }}
+        keyVaultName: $(VaultName)
+        keyVaultResourceGroupName: $(VaultResourceGroupName)
+        keyVaultSubscriptionId: $(VaultSubscriptionId)
+        podResourceGroup: AVD-${{ parameters.personaId }}-${{ parameters.podId }}-RG
+        podVariables: ${{ parameters.podVariables }}
+
+
+    ## Stage to remove Session Hosts. Drain hosts and log off users. Remove the resource group
+  - ${{ if eq(parameters.action,'Remove') }}:
+    - template: remove-host-pool-vms.yml
+      parameters: 
+        podId: ${{ parameters.podId }}
+        personaId: ${{ parameters.personaId }}
+        podResourceGroup: AVD-${{ parameters.personaId }}-${{ parameters.podId }}-RG
+
+

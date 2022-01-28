@@ -1,0 +1,33 @@
+parameters:
+  - name: podId
+    default: ""
+  - name: personaId
+  - name: podResourceGroup
+  - name: podVariables
+    type: object
+    default: {}
+
+
+stages:
+  # Create file share for user profiles
+  - stage: DeployAzureFileShare_For_${{ parameters.podId }}
+    dependsOn: DeployPod_${{ parameters.podId }}
+    displayName: Deploy Azure File Share for ${{ parameters.podId }}
+    jobs:
+      - template: ../jobs/deploy-template.yml
+        parameters:
+          jobName: Deploy_AzureFileShare_${{ parameters.personaId }}_${{ parameters.podId}}_share
+          resourceGroupName: ${{ parameters.podResourceGroup }}
+          location: $(deploymentRegion)
+          subscriptionID: $(subscriptionID)
+          workingDir: $(System.DefaultWorkingDirectory)
+          templateFile: bicep-modules/storage/new-share.bicep
+          variableOverrides: ${{ parameters.podVariables }}
+          parameterArray:
+            - fileshareName ${{ parameters.personaId }}-${{ parameters.podId}}-share
+            - storageAccount $(storageAccount)
+            - accessTier $(accessTier)
+            - enabledProtocols $(enabledProtocols)
+            - shareQuota $(shareQuota)
+   
+

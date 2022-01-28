@@ -1,0 +1,96 @@
+parameters:
+  - name: podId
+    default: ""
+  - name: personaId
+  - name: numberOfVMs   # number of VMs to add 
+    type: number
+  - name: currentInstances
+    type: number
+    default: 0
+  - name: keyVaultName
+  - name: keyVaultResourceGroupName
+  - name: keyVaultSubscriptionId
+  - name: podResourceGroup
+  - name: podVariables
+    type: object
+    default: {}
+
+stages:
+  - stage: Deploy_Host_VMs_${{ parameters.podId }}
+    displayName: Deploy VMs ${{ parameters.podId}}
+    jobs:
+
+  # Deploy Host Pool VMs Resource Group
+      - template: ../jobs/deploy-template-sub.yml
+        parameters:
+          jobName: Deploy_RG_for_HostPool_VMs_${{ parameters.personaId }}_${{ parameters.podId }}_Pool
+          location: $(deploymentRegion)
+          workingDir: $(System.DefaultWorkingDirectory)/bicep-modules
+          templateFile: azresource/new-rg.bicep
+          parameterArray:
+            - resourceGroupName AVD-${{ parameters.personaId }}-${{ parameters.podId }}-RG
+            - resourceGroupLocation $(deploymentRegion)
+
+  # Deploy VMs 
+      - template: ../jobs/deploy-template.yml
+        parameters:
+          jobName: Deploy_VMs_for_Host_Pool_${{ parameters.personaId }}_${{ parameters.podId }}_Pool
+          dependsOnJob: Deploy_RG_for_HostPool_VMs_${{ parameters.personaId }}_${{ parameters.podId }}_Pool
+          resourceGroupName: AVD-${{ parameters.personaId }}-${{ parameters.podId }}-RG
+          location: $(deploymentRegion)
+          subscriptionID: $(subscriptionID)
+          workingDir: $(System.DefaultWorkingDirectory)
+          templateFile: bicep-modules/host-pool-VMs.bicep
+          preDeploySteps: 
+            - task: AzureCLI@2
+              name: Update_HostPool_Token_for_${{ parameters.podId }}
+              inputs: 
+                azureSubscription: $(serviceConnection)
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: | 
+                  az config set extension.use_dynamic_install=yes_without_prompt
+                  expirytime=`date -u -d "90 minutes" '+%Y-%m-%dT%H:%M:%SZ'`
+                  echo 'Set expiry time to' $expirytime
+                  hostpoolupdate=$(az desktopvirtualization hostpool update --name ${{ parameters.personaId }}-${{ parameters.podId }}-Pool --resource-group AVD-${{ parameters.personaId }}-RG --registration-info expiration-time=$expirytime registration-token-operation="Update")
+                  token=$(az desktopvirtualization hostpool show --name ${{ parameters.personaId }}-${{ parameters.podId }}-Pool --resource-group AVD-${{ parameters.personaId }}-RG --query 'registrationInfo.token')
+                  az keyvault secret set --vault-name ${{ parameters.keyVaultName }} --name ${{ parameters.personaId }}-${{ parameters.podId }}-Pool --value $token 
+          variableOverrides: ${{ parameters.podVariables }}
+          parameterArray:
+            - VaultName ${{ parameters.keyVaultName }}
+            - VaultResourceGroupName ${{ parameters.keyVaultResourceGroupName }}
+            - VaultSubscriptionId ${{ parameters.keyVaultSubscriptionId }}
+            - useSharedImage $(useSharedImage)
+            - VnetName $(VnetName)
+            - VnetResourceGroup $(VnetResourceGroup)
+            - subnetName ${{ parameters.personaId }}-SUB
+            - personaId ${{ parameters.personaId }}
+            - podId ${{ parameters.podId }}
+            - hostPoolResourceGroup AVD-${{ parameters.personaId }}-RG
+            # - workspaceId $(workspaceId)
+            - joinDomain $(joinDomain)
+            - ouPath $(ouPath)
+            - domainToJoin $(domainToJoin)
+            - instance_count ${{ parameters.numberOfVMs }}
+            - currentInstances ${{ parameters.currentInstances }}
+            - vmSize $(vmSize)
+            - storageAccountType $(storageAccountType)
+            - personaStorageAccount $(storageAccount)
+            - shareName ${{ parameters.personaId }}-${{ parameters.podId}}-share
+            - storageAccountName $(storageaccountForScripts)
+            - storageResourceGroup $(storageaccountRG)
+            - container $(container)
+            - shared_image_gallery_rg $(sigRG)
+            - shared_image_gallery_name $(sigName)
+            - shared_image_gallery_definition $(image)
+
+          # postDeploySteps:
+          #   - task: AzurePowerShell@4
+          #     name: AddTestUsers
+          #     displayName: Add Test Users
+          #     inputs:
+          #       scriptType: FilePath
+          #       azurePowerShellVersion: LatestVersion
+          #       azureSubscription: $(azureConnectionName)
+          #       scriptPath: $(Build.Repository.LocalPath)\misc\Add-AppGroupAssignment.ps1
+          #       scriptArguments: -ResourceGroupName ${{ parameters.podResourceGroup }} -WvdAppGroupName $(appGroupName) -AzureADGroupName $(testUserGroup)

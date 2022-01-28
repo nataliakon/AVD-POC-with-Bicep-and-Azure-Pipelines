@@ -1,0 +1,21 @@
+parameters: 
+  - name: personaId
+  - name: podId
+  - name: podResourceGroup
+
+
+jobs: 
+
+  - job: Drain_HostPool_for_${{ parameters.podId }}
+    displayName: Drain HostPool of ${{ parameters.podId }}
+    steps: 
+      - task: AzurePowerShell@4
+        name: Drain_mode_for_HostPool_in_${{ parameters.podId }}
+        displayName: Set Drain mode on HostPool in ${{ parameters.podId }}
+        inputs: 
+          pwsh: true
+          azureSubscription: $(serviceConnection)
+          scriptType: filePath
+          azurePowerShellVersion: "LatestVersion"
+          scriptPath: $(Build.Repository.LocalPath)\scripts\Drain-HostPool.ps1
+          scriptArguments: -ResourceGroupName ${{ parameters.podResourceGroup }}  -HostPoolName ${{ parameters.personaId }}-${{ parameters.podId }}-Pool

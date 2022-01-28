@@ -1,0 +1,35 @@
+# Pipleine for virtual machines management for multiple PODs in Persona
+
+trigger:
+  - none
+
+pr:
+  - none
+
+pool:
+  vmImage: $[ variables.vmWinImage ]
+
+parameters:
+  - name: persona
+    displayName: Persona
+    type: string
+    values:
+      - PR01
+      - PR02
+
+  - name: action
+    displayName: Action
+    type: string
+    values: 
+      - NewBuild
+      - Add 
+      - Update
+      - Remove
+
+extends:
+  template: ../config/Persona/${{ parameters.persona }}.yml
+  parameters: 
+    vmManagement: true
+    action: ${{ parameters.action }} 
+
+
